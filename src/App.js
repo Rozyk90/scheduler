@@ -1,7 +1,11 @@
-function App() {
-  return <div className="App">
+import SchedulerApp from "./components/schedulerApp";
 
-  </div>;
+function App() {
+  return (
+    <div className="App">
+      <SchedulerApp />
+    </div>
+  );
 }
 
 export default App;
