@@ -30,6 +30,7 @@ import {
   deleteDoc,
 } from "firebase/firestore";
 import { db } from "../firebase";
+import { appointmentFormPL } from "./translation";
 
 export default function SchedulerApp() {
   const [data, setData] = useState([]);
@@ -104,11 +105,15 @@ export default function SchedulerApp() {
         <Toolbar />
         <ViewSwitcher />
         <DateNavigator />
-        <TodayButton />
+        <TodayButton
+          messages={{
+            today: "Dzisiaj",
+          }}
+        />
 
         <Appointments />
         <AppointmentTooltip showCloseButton showOpenButton />
-        <AppointmentForm />
+        <AppointmentForm messages={appointmentFormPL} />
       </Scheduler>
     </Paper>
   );
