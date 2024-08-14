@@ -35,60 +35,75 @@ import { appointmentFormPL } from "./translation";
 export default function SchedulerApp() {
   const [data, setData] = useState([]);
 
-  function firestoreTimestampToDateString(firestoreTimestamp) {
+  const firestoreTimestampToDate = (firestoreTimestamp) => {
     const { seconds, nanoseconds } = firestoreTimestamp;
     const milliseconds = seconds * 1000 + nanoseconds / 1000000;
     const date = new Date(milliseconds);
-    return date.toString();
-  }
+    return date;
+  };
 
   // ==================================================================================
 
+  const create = async (added) => {
+    const id = Date.now().toString();
+    const title = added.title ? added.title : "";
+    const rRule = added.rRule ? added.rRule : "";
+    await setDoc(doc(db, "scheduler", id), { id, ...added, title, rRule });
+    schedulerUpdate();
+  };
+
+  const update = async (changed) => {
+    const [id] = Object.keys(changed);
+
+    const rRule = changed[id].rRule ? changed[id].rRule : "";
+    await updateDoc(doc(db, "scheduler", id), { ...changed[id], rRule });
+
+    schedulerUpdate();
+  };
+
+  const deleteNote = async (id) => {
+    await deleteDoc(doc(db, "scheduler", id));
+    schedulerUpdate();
+  };
+
+  const replace = async (added, changed) => {
+    const [id] = Object.keys(changed);
+    await deleteNote(id);
+    await create(added);
+  };
+
   const editState = async ({ added, changed, deleted }) => {
-    if (added) {
-      if (changed === undefined) {
-        const id = Date.now().toString();
-        await setDoc(doc(db, "scheduler", id), { id, ...added });
-        dataUpdate();
-      } else {
-        // clean reps
-        const [deleteId = id] = Object.keys(changed);
-        await deleteDoc(doc(db, "scheduler", deleteId));
-        const id = Date.now().toString();
-        const { rRule, ...addedWithoutRRule } = added;
-        await setDoc(doc(db, "scheduler", id), { id, ...addedWithoutRRule });
-        dataUpdate();
-      }
+    console.log(added, changed, deleted);
+    console.log("====================================");
+    if (added && changed === undefined) {
+      create(added);
     }
 
-    if (changed && added === undefined) {
-      const [id] = Object.keys(changed);
-      await updateDoc(doc(db, "scheduler", id), changed[id]);
-      dataUpdate();
+    if (changed) {
+      added ? replace(added, changed) : update(changed);
     }
 
     if (deleted !== undefined) {
-      await deleteDoc(doc(db, "scheduler", deleted));
-      dataUpdate();
+      deleteNote(deleted);
     }
   };
 
   // ==================================================================================
 
-  const dataUpdate = async () => {
+  const schedulerUpdate = async () => {
     const data = await getDocs(collection(db, "scheduler"));
     const newArr = [];
     data.forEach((doc) => {
       const firestoreObj = doc.data();
-      const startDate = firestoreTimestampToDateString(firestoreObj.startDate);
-      const endDate = firestoreTimestampToDateString(firestoreObj.endDate);
+      const startDate = firestoreTimestampToDate(firestoreObj.startDate);
+      const endDate = firestoreTimestampToDate(firestoreObj.endDate);
       newArr.push({ ...firestoreObj, startDate, endDate });
     });
     setData(newArr);
   };
 
   useEffect(() => {
-    dataUpdate();
+    schedulerUpdate();
   }, []);
 
   return (
